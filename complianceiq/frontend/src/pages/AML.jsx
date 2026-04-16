@@ -45,7 +45,7 @@ export default function AML() {
     } catch {
       setStr({
         report_reference: `STR-${tx.transaction_id.slice(-4).toUpperCase()}`,
-        reporting_institution: 'ComplianceIQ Demo Bank',
+        reporting_institution: 'WeGoComply Demo Bank',
         subject_name: tx.customer_id,
         transaction_summary: `Customer conducted a ${tx.transaction_type} of ₦${tx.amount.toLocaleString()} via ${tx.channel} at an unusual time.`,
         grounds_for_suspicion: 'Transaction amount exceeds ₦5M threshold and occurred outside normal banking hours (2-4am). Counterparty is an unverified entity.',

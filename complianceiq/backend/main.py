@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routers import kyc, aml, tax, regulatory
 
-app = FastAPI(title="ComplianceIQ API", version="1.0.0")
+app = FastAPI(title="WeGoComply API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -18,4 +18,4 @@ app.include_router(regulatory.router, prefix="/api/regulatory", tags=["Regulator
 
 @app.get("/")
 def health():
-    return {"status": "ComplianceIQ running", "version": "1.0.0"}
+    return {"status": "WeGoComply running", "version": "1.0.0"}

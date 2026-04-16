@@ -88,7 +88,7 @@ Transaction details:
 
 Return a JSON object with these fields:
 - report_reference: unique reference
-- reporting_institution: "ComplianceIQ Demo Bank"
+- reporting_institution: "WeGoComply Demo Bank"
 - subject_name: customer ID as placeholder
 - transaction_summary: 2-sentence description
 - grounds_for_suspicion: specific reasons
@@ -108,7 +108,7 @@ Return a JSON object with these fields:
         # Demo fallback
         return {
             "report_reference": f"STR-{transaction_id[:8].upper()}",
-            "reporting_institution": "ComplianceIQ Demo Bank",
+            "reporting_institution": "WeGoComply Demo Bank",
             "subject_name": transaction.customer_id,
             "transaction_summary": f"Customer conducted a {transaction.transaction_type} of ₦{transaction.amount:,.2f} via {transaction.channel} at an unusual time.",
             "grounds_for_suspicion": "Transaction amount exceeds threshold and occurred outside normal banking hours.",

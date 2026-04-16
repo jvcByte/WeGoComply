@@ -1,8 +1,8 @@
-# ComplianceIQ — AI-Powered AML/KYC & Tax Compliance Platform
+# WeGoComply — AI-Powered AML/KYC & Tax Compliance Platform
 
 ## Project Structure
 ```
-complianceiq/
+wegocomply/
 ├── backend/          # FastAPI Python backend
 ├── frontend/         # React + Tailwind dashboard
 └── ml/               # Anomaly detection model
