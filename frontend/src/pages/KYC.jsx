@@ -81,6 +81,7 @@ export default function KYC() {
             type="file"
             accept="image/*"
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400"
+            required
             onChange={e => setSelfie(e.target.files[0])}
           />
         </div>

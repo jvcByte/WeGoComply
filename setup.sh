@@ -1,100 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-set -e  # Exit on any error
+set -euo pipefail
 
-# Cleanup function to revert changes on failure
-cleanup() {
-    if [ $? -ne 0 ]; then
-        echo ""
-        echo "❌ Setup failed! Reverting changes..."
-        if [ -d "backend/venv" ]; then
-            rm -rf backend/venv
-            echo "Removed backend/venv"
-        fi
-        if [ -f "backend/.env" ] && [ ! -f "backend/.env.backup" ]; then
-            rm -f backend/.env
-            echo "Removed backend/.env"
-        fi
-        exit 1
-    fi
-}
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
 
-trap cleanup EXIT
+if command -v python3 >/dev/null 2>&1; then
+  PYTHON_BIN="python3"
+elif command -v python >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+else
+  echo "Python was not found. Install Python 3.11+ and rerun setup."
+  exit 1
+fi
 
 echo "=== WeGoComply Setup Script ==="
 echo ""
 
-# Backend setup
 echo "=== Setting up Backend ==="
-cd backend
-
-# Create .env if it doesn't exist
-if [ ! -f .env ]; then
-    if [ -f .env.example ]; then
-        cp .env.example .env
-        echo "✓ Created .env file. Please add your API keys before running."
-    else
-        echo "❌ Error: .env.example not found"
-        exit 1
-    fi
-fi
-
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-    echo "Creating Python virtual environment..."
-    python3 -m venv venv
-    echo "✓ Virtual environment created"
+if [ ! -f "$BACKEND_DIR/.env" ]; then
+  cp "$BACKEND_DIR/.env.example" "$BACKEND_DIR/.env"
+  echo "Created backend/.env. Review WEGOCOMPLY_MODE and API keys before running in live mode."
 else
-    echo "✓ Virtual environment already exists"
+  echo "backend/.env already exists"
 fi
 
-# Activate virtual environment and install dependencies
-echo "Activating virtual environment..."
-source venv/bin/activate
-
-# Check if dependencies are installed
-if python -c "import fastapi" 2>/dev/null; then
-    echo "✓ Python dependencies already installed"
+if [ ! -d "$BACKEND_DIR/venv" ]; then
+  echo "Creating Python virtual environment..."
+  "$PYTHON_BIN" -m venv "$BACKEND_DIR/venv"
 else
-    echo "Installing Python dependencies in virtual environment..."
-    pip install --upgrade pip
-    pip install -r requirements.txt
-    echo "✓ Python dependencies installed"
+  echo "Python virtual environment already exists"
 fi
 
-deactivate
-cd ..
+echo "Installing backend dependencies..."
+"$BACKEND_DIR/venv/bin/python" -m pip install --upgrade pip
+"$BACKEND_DIR/venv/bin/python" -m pip install -r "$BACKEND_DIR/requirements.txt"
 
-# Frontend setup
 echo ""
 echo "=== Setting up Frontend ==="
-cd frontend
-
-# Check if node_modules exists
-if [ ! -d "node_modules" ]; then
-    echo "Installing Node dependencies..."
-    npm install
-    echo "✓ Node dependencies installed"
+if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+  echo "Installing Node dependencies..."
+  (cd "$FRONTEND_DIR" && npm install)
 else
-    echo "✓ Node modules already installed"
+  echo "frontend/node_modules already exists"
 fi
 
-cd ..
-
 echo ""
-echo "=== ✓ Setup Complete! ==="
+echo "=== Setup Complete ==="
 echo ""
-echo "To run the project:"
-echo ""
-echo "Terminal 1 (Backend):"
+echo "Backend:"
 echo "  cd backend"
 echo "  source venv/bin/activate"
 echo "  uvicorn main:app --reload"
 echo ""
-echo "Terminal 2 (Frontend):"
+echo "Frontend:"
 echo "  cd frontend"
 echo "  npm run dev"
 echo ""
-echo "Then visit: http://localhost:5173"
-echo ""
-echo "Note: Backend runs in a virtual environment (venv)"
+echo "Windows PowerShell:"
+echo "  .\\setup.ps1"

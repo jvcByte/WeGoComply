@@ -1,37 +1,32 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
-from typing import List
-from services.aml_service import analyze_transactions, generate_str
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+
+from dependencies import get_aml_service
+from schemas.aml import AMLMonitorResponse, STRReportResponse, Transaction, TransactionBatchRequest
+from schemas.common import ErrorResponse
+from services.aml_service import AMLService
 
 router = APIRouter()
+ERROR_RESPONSES = {
+    422: {"model": ErrorResponse},
+    500: {"model": ErrorResponse},
+    502: {"model": ErrorResponse},
+}
 
-class Transaction(BaseModel):
-    transaction_id: str
-    customer_id: str
-    amount: float
-    currency: str = "NGN"
-    timestamp: str
-    transaction_type: str  # transfer, deposit, withdrawal
-    counterparty: str
-    channel: str  # mobile, web, pos, atm
 
-class TransactionBatch(BaseModel):
-    transactions: List[Transaction]
+@router.post("/monitor", response_model=AMLMonitorResponse, responses=ERROR_RESPONSES)
+async def monitor_transactions(
+    batch: TransactionBatchRequest,
+    service: AMLService = Depends(get_aml_service),
+) -> AMLMonitorResponse:
+    return service.analyze_transactions(batch.transactions)
 
-@router.post("/monitor")
-async def monitor_transactions(batch: TransactionBatch):
-    """
-    Run anomaly detection on a batch of transactions.
-    Returns flagged transactions with risk scores.
-    """
-    results = analyze_transactions(batch.transactions)
-    return results
 
-@router.post("/generate-str/{transaction_id}")
-async def create_str(transaction_id: str, transaction: Transaction):
-    """
-    Auto-generate a Suspicious Transaction Report (STR)
-    in NFIU-compliant format.
-    """
-    str_report = await generate_str(transaction_id, transaction)
-    return str_report
+@router.post("/generate-str/{transaction_id}", response_model=STRReportResponse, responses=ERROR_RESPONSES)
+async def create_str(
+    transaction_id: str,
+    transaction: Transaction,
+    service: AMLService = Depends(get_aml_service),
+) -> STRReportResponse:
+    return await service.generate_str(transaction_id, transaction)

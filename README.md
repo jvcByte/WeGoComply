@@ -63,11 +63,15 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
+```powershell
+.\setup.ps1
+```
+
 This will:
-- Install pip if needed
 - Set up backend dependencies
 - Set up frontend dependencies
-- Create `.env` file
+- Create `backend/.env`
+- Default the backend to `WEGOCOMPLY_MODE=mock`
 
 ### Manual Setup
 
@@ -90,7 +94,7 @@ uvicorn main:app --reload
 
 Backend runs at `http://localhost:8000`
 
-**Note:** Always activate venv before running: `source venv/bin/activate`
+**Note:** `WEGOCOMPLY_MODE=mock` is the safe default. Switch to `live` only after adding the required Azure and Dojah credentials to `backend/.env`.
 
 #### Frontend Setup
 ```bash
