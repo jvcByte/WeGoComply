@@ -40,3 +40,22 @@ class ExternalServiceError(AppError):
             details=details,
         )
 
+
+class AuthenticationError(AppError):
+    def __init__(self, message: str, *, details: Any | None = None) -> None:
+        super().__init__(
+            message,
+            code="AUTHENTICATION_ERROR",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            details=details,
+        )
+
+
+class AuthorizationError(AppError):
+    def __init__(self, message: str, *, details: Any | None = None) -> None:
+        super().__init__(
+            message,
+            code="AUTHORIZATION_ERROR",
+            status_code=status.HTTP_403_FORBIDDEN,
+            details=details,
+        )

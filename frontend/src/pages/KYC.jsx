@@ -1,111 +1,144 @@
 import React, { useState } from 'react'
 import { Shield, CheckCircle, XCircle, Loader } from 'lucide-react'
-import axios from 'axios'
+import { useAuth } from '../auth/AuthProvider'
+import { getApiErrorMessage, useApiClient } from '../lib/api'
 
 export default function KYC() {
+  const { authMode } = useAuth()
+  const api = useApiClient()
   const [form, setForm] = useState({ nin: '', bvn: '' })
   const [selfie, setSelfie] = useState(null)
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
+  const handleSubmit = async (event) => {
+    event.preventDefault()
     setLoading(true)
     setResult(null)
+    setError('')
+
     try {
-      const fd = new FormData()
-      fd.append('nin', form.nin)
-      fd.append('bvn', form.bvn)
-      if (selfie) fd.append('selfie', selfie)
-      const { data } = await axios.post('/api/kyc/verify', fd)
+      const formData = new FormData()
+      formData.append('nin', form.nin)
+      formData.append('bvn', form.bvn)
+      if (selfie) formData.append('selfie', selfie)
+
+      const { data } = await api.post('/api/kyc/verify', formData)
       setResult(data)
-    } catch {
-      // Demo fallback
-      setResult({
-        status: 'VERIFIED',
-        risk_score: 0.12,
-        risk_level: 'LOW',
-        details: {
-          nin_verified: true,
-          bvn_verified: true,
-          face_match: true,
-          face_confidence: 0.94,
-          name: 'Demo User',
-          dob: '1990-01-01',
-          phone: '080XXXXXXXX'
-        }
-      })
+    } catch (requestError) {
+      if (authMode === 'mock') {
+        setResult({
+          status: 'VERIFIED',
+          risk_score: 0.12,
+          risk_level: 'LOW',
+          details: {
+            nin_verified: true,
+            bvn_verified: true,
+            face_match: true,
+            face_confidence: 0.94,
+            name: 'Demo User',
+            dob: '1990-01-01',
+            phone: '080XXXXXXXX',
+          },
+        })
+      } else {
+        setError(getApiErrorMessage(requestError, 'KYC verification failed.'))
+      }
     }
+
     setLoading(false)
   }
 
   const riskColor = {
     LOW: 'text-green-400 bg-green-900/30',
     MEDIUM: 'text-yellow-400 bg-yellow-900/30',
-    HIGH: 'text-red-400 bg-red-900/30'
+    HIGH: 'text-red-400 bg-red-900/30',
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-6">
+    <div className="max-w-2xl space-y-6 p-6">
       <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
+        <h1 className="flex items-center gap-2 text-2xl font-bold">
           <Shield className="text-blue-500" size={22} /> KYC Verification
         </h1>
-        <p className="text-gray-400 text-sm mt-1">Multi-source identity verification with AI risk scoring</p>
+        <p className="mt-1 text-sm text-gray-400">
+          Multi-source identity verification with AI risk scoring
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-4">
+      {error && (
+        <div className="rounded-xl border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-200">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-5">
         <div>
-          <label className="text-sm text-gray-400 block mb-1">NIN (National Identification Number)</label>
+          <label className="mb-1 block text-sm text-gray-400">
+            NIN (National Identification Number)
+          </label>
           <input
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             placeholder="12345678901"
             value={form.nin}
-            onChange={e => setForm({ ...form, nin: e.target.value })}
+            onChange={(event) => setForm({ ...form, nin: event.target.value })}
             required
           />
         </div>
+
         <div>
-          <label className="text-sm text-gray-400 block mb-1">BVN (Bank Verification Number)</label>
+          <label className="mb-1 block text-sm text-gray-400">
+            BVN (Bank Verification Number)
+          </label>
           <input
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
             placeholder="12345678901"
             value={form.bvn}
-            onChange={e => setForm({ ...form, bvn: e.target.value })}
+            onChange={(event) => setForm({ ...form, bvn: event.target.value })}
             required
           />
         </div>
+
         <div>
-          <label className="text-sm text-gray-400 block mb-1">Selfie / Photo ID</label>
+          <label className="mb-1 block text-sm text-gray-400">Selfie / Photo ID</label>
           <input
             type="file"
             accept="image/*"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-gray-400"
+            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-400"
             required
-            onChange={e => setSelfie(e.target.files[0])}
+            onChange={(event) => setSelfie(event.target.files[0])}
           />
         </div>
+
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2"
+          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
         >
-          {loading ? <><Loader size={16} className="animate-spin" /> Verifying...</> : 'Verify Identity'}
+          {loading ? (
+            <>
+              <Loader size={16} className="animate-spin" /> Verifying...
+            </>
+          ) : (
+            'Verify Identity'
+          )}
         </button>
       </form>
 
       {result && (
-        <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 space-y-4">
+        <div className="space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-5">
           <div className="flex items-center gap-3">
-            {result.status === 'VERIFIED'
-              ? <CheckCircle className="text-green-400" size={24} />
-              : <XCircle className="text-red-400" size={24} />
-            }
+            {result.status === 'VERIFIED' ? (
+              <CheckCircle className="text-green-400" size={24} />
+            ) : (
+              <XCircle className="text-red-400" size={24} />
+            )}
             <div>
-              <div className="font-bold text-lg">{result.status}</div>
+              <div className="text-lg font-bold">{result.status}</div>
               <div className="text-xs text-gray-400">Identity verification complete</div>
             </div>
-            <span className={`ml-auto text-sm font-bold px-3 py-1 rounded-full ${riskColor[result.risk_level]}`}>
+            <span className={`ml-auto rounded-full px-3 py-1 text-sm font-bold ${riskColor[result.risk_level]}`}>
               {result.risk_level} RISK
             </span>
           </div>
@@ -119,13 +152,18 @@ export default function KYC() {
               ['Name', result.details.name],
               ['Risk Score', result.risk_score],
             ].map(([label, value]) => (
-              <div key={label} className="bg-gray-800 rounded-lg p-3">
-                <div className="text-gray-400 text-xs">{label}</div>
-                <div className="font-medium mt-0.5">
-                  {typeof value === 'boolean'
-                    ? (value ? <span className="text-green-400">✓ Yes</span> : <span className="text-red-400">✗ No</span>)
-                    : value
-                  }
+              <div key={label} className="rounded-lg bg-gray-800 p-3">
+                <div className="text-xs text-gray-400">{label}</div>
+                <div className="mt-0.5 font-medium">
+                  {typeof value === 'boolean' ? (
+                    value ? (
+                      <span className="text-green-400">Yes</span>
+                    ) : (
+                      <span className="text-red-400">No</span>
+                    )
+                  ) : (
+                    value
+                  )}
                 </div>
               </div>
             ))}

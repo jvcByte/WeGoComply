@@ -3,9 +3,12 @@ from __future__ import annotations
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from core.request_context import RequestContextMiddleware
+from core.rate_limit import RateLimitMiddleware
 from core.config import get_settings
 from core.exception_handlers import register_exception_handlers
-from routers import aml, kyc, regulatory, tax
+from dependencies import get_rate_limiter
+from routers import aml, auth, kyc, regulatory, tax
 from schemas.common import HealthResponse
 
 settings = get_settings()
@@ -15,12 +18,21 @@ app = FastAPI(title=settings.app_name, version=settings.app_version)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=settings.cors_allow_credentials,
+    allow_methods=list(settings.cors_methods),
+    allow_headers=list(settings.cors_headers),
+    expose_headers=["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
+)
+app.add_middleware(RequestContextMiddleware)
+app.add_middleware(
+    RateLimitMiddleware,
+    rate_limiter=get_rate_limiter(),
+    enabled=settings.rate_limit_enabled,
 )
 
 register_exception_handlers(app)
 
+app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(kyc.router, prefix="/api/kyc", tags=["KYC"])
 app.include_router(aml.router, prefix="/api/aml", tags=["AML"])
 app.include_router(tax.router, prefix="/api/tax", tags=["Tax"])
@@ -30,6 +42,7 @@ app.include_router(regulatory.router, prefix="/api/regulatory", tags=["Regulator
 @app.on_event("startup")
 async def validate_settings() -> None:
     settings.validate_runtime()
+    get_rate_limiter().validate_connection()
 
 
 @app.get("/", response_model=HealthResponse)
