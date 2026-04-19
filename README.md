@@ -82,12 +82,15 @@ This will:
 cd backend
 python3 -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env  # Add your API keys
 uvicorn main:app --reload
 ```
 
 Backend runs at `http://localhost:8000`
+
+**Note:** Always activate venv before running: `source venv/bin/activate`
 
 #### Frontend Setup
 ```bash
