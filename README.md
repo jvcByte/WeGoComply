@@ -1,17 +1,15 @@
 # WeGoComply — AI-Powered Compliance Platform for Nigerian Fintechs
 
-**RegTech Hackathon — Microsoft AI Skills Week 2026**
-
 WeGoComply automates KYC/KYB verification, real-time AML transaction monitoring, and bulk TIN reconciliation for Nigerian financial institutions using Microsoft Azure AI.
 
 ---
 
 ## 🎯 The Problem
 
-Nigerian fintechs face three urgent compliance crises in 2026:
-- **CBN Mandate**: Real-time AML monitoring required by June 30, 2026
-- **FIRS Mandate**: TIN verification required or accounts restricted April 1, 2026
-- **Operational Reality**: Manual KYC takes 3-5 days, costs ₦1B+ in fines when it fails
+Nigerian fintechs face critical compliance challenges:
+- **CBN Requirements**: Real-time AML monitoring and suspicious transaction reporting
+- **FIRS Requirements**: TIN verification for all customer accounts
+- **Operational Reality**: Manual KYC takes 3-5 days, high compliance costs, and risk of regulatory penalties
 
 ---
 
@@ -43,73 +41,88 @@ Nigerian fintechs face three urgent compliance crises in 2026:
 ## 🏗 Project Structure
 
 ```
-complianceiq/
+wegocomply/
 ├── backend/          # FastAPI Python backend
 │   ├── routers/      # API endpoints (KYC, AML, Tax, Regulatory)
 │   └── services/     # Business logic + Azure AI integrations
 ├── frontend/         # React + Tailwind dashboard
 │   └── src/pages/    # Dashboard, KYC, AML, Tax, Regulatory views
 ├── ml/               # Anomaly detection model training
-└── docs/             # Architecture, wireframes, demo script, pitch deck
+├── docs/             # Architecture, wireframes, demo guides
+└── setup.sh          # Automated setup script
 ```
 
 ---
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Automated Setup (Recommended)
+
+```bash
+chmod +x setup.sh
+./setup.sh
+```
+
+This will:
+- Install pip if needed
+- Set up backend dependencies
+- Set up frontend dependencies
+- Create `.env` file
+
+### Manual Setup
+
+#### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- Azure account (free tier works)
-- Dojah API account (free sandbox)
+- Azure account (optional, for live AI features)
+- Dojah API account (optional, for live identity verification)
 
-### Backend Setup
+#### Backend Setup
 ```bash
-cd complianceiq/backend
-cp .env.example .env   # Add your Azure + Dojah keys
+cd backend
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env  # Add your API keys
 uvicorn main:app --reload
 ```
 
 Backend runs at `http://localhost:8000`
 
-### Frontend Setup
+#### Frontend Setup
 ```bash
-cd complianceiq/frontend
+cd frontend
 npm install
 npm run dev
 ```
 
 Frontend runs at `http://localhost:5173`
 
-### Optional: Train ML Model
-```bash
-cd complianceiq/ml
-python train_anomaly_model.py
-```
-
 ---
 
-## 🎬 Demo Flow (5 Minutes)
+## 🎬 Using the Platform
 
-1. **KYC Verification** (90 seconds)
+Visit `http://localhost:5173` and explore:
+
+1. **KYC Verification**
    - Enter NIN + BVN + upload selfie
-   - Azure AI verifies identity in <2 minutes
-   - Risk score: 0.12 (LOW)
+   - Azure AI verifies identity in under 2 minutes
+   - Get risk score: LOW/MEDIUM/HIGH
 
-2. **AML Monitoring** (90 seconds)
-   - Analyze batch of 5 transactions
-   - ML flags 3 suspicious (₦7.5M at 2am, etc.)
-   - Generate STR for NFIU submission
+2. **AML Monitoring**
+   - Analyze transaction batches
+   - ML flags suspicious patterns (large amounts, unusual hours)
+   - Generate NFIU-compliant STRs automatically
 
-3. **TIN Verification** (60 seconds)
-   - Bulk verify 5 customer TINs
-   - Match rate: 80%
-   - Deadline risk: MEDIUM
+3. **TIN Verification**
+   - Bulk verify customer TINs against FIRS
+   - View match rate and deadline risk
+   - Identify mismatches instantly
 
-4. **Regulatory Intelligence** (30 seconds)
-   - View AI-summarized CBN/FIRS updates
-   - Action items + deadlines highlighted
+4. **Regulatory Intelligence**
+   - View AI-summarized CBN/FIRS/SEC/FCCPC updates
+   - See action items and deadlines
+   - Stay compliant automatically
 
 ---
 
@@ -158,47 +171,37 @@ python train_anomaly_model.py
 
 - [Architecture Diagram](docs/ARCHITECTURE.md) — System design, data flows, scalability
 - [Wireframes](docs/WIREFRAMES.md) — UI mockups for all pages
-- [Demo Script](docs/DEMO_SCRIPT.md) — 5-minute presentation guide
-- [Pitch Deck Outline](docs/PITCH_DECK_OUTLINE.md) — 16-slide investor deck
+- [Demo Guide](docs/DEMO_SCRIPT.md) — Platform walkthrough
+- [Setup Instructions](RUN_INSTRUCTIONS.md) — Detailed setup and troubleshooting
 
 ---
 
 ## 🎯 Roadmap
 
-**Q2 2026** (Now)
-- ✅ MVP complete with KYC, AML, TIN modules
-- ✅ Azure AI integration live
-- 🔄 Onboard 10 pilot fintechs
+**Current**
+- ✅ KYC/KYB automation with Azure AI
+- ✅ Real-time AML monitoring with ML
+- ✅ Bulk TIN verification
+- ✅ Regulatory intelligence feed
 
-**Q3 2026**
-- Expand to 50+ institutions
-- CBN/NFIU SupTech partnership
-- API marketplace launch
-
-**Q4 2026**
+**Coming Soon**
 - SME compliance module
 - Cross-border remittance support
+- Enhanced reporting and analytics
+- Mobile app
 
-**2027**
+**Future**
 - Regional expansion (Ghana, Kenya, South Africa)
-- Pan-African RegTech leader
-
----
-
-## 🏆 Hackathon Submission
-
-**Team:** [Your Team Name]  
-**Event:** RegTech Hackathon — Microsoft AI Skills Week 2026  
-**Dates:** Mentorship 20-21 April, Presentation 22 April 2026  
-**Prize:** $1,000 Grand Prize
+- Open Banking integration
+- Blockchain audit trails
 
 ---
 
 ## 📧 Contact
 
-**Website:** [your-domain.com]  
-**Email:** [team@wegocomply.com]  
-**Demo:** [Live demo link or QR code]
+**Website:** [Coming Soon]  
+**Email:** team@wegocomply.com  
+**GitHub:** [github.com/jvcByte/WeGoComply](https://github.com/jvcByte/WeGoComply)
 
 ---
 
