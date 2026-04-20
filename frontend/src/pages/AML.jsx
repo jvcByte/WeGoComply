@@ -58,7 +58,7 @@ const SAMPLE_TRANSACTIONS = [
 ]
 
 export default function AML() {
-  const { authMode, hasAnyRole } = useAuth()
+  const { hasAnyRole } = useAuth()
   const api = useApiClient()
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -70,95 +70,31 @@ export default function AML() {
   const runMonitor = async () => {
     setLoading(true)
     setError('')
+    setResults(null)
 
     try {
       const { data } = await api.post('/api/aml/monitor', { transactions: SAMPLE_TRANSACTIONS })
       setResults(data)
     } catch (requestError) {
-      if (authMode === 'mock') {
-        setResults({
-          total_analyzed: 5,
-          flagged_count: 3,
-          clean_count: 2,
-          flagged_transactions: [
-            {
-              transaction_id: 'TXN-001',
-              customer_id: 'CUST-4421',
-              amount: 7500000,
-              currency: 'NGN',
-              timestamp: '2026-04-16T02:34:00',
-              transaction_type: 'transfer',
-              counterparty: 'Unknown Corp Ltd',
-              channel: 'mobile',
-              anomaly_score: -0.312,
-              rules_triggered: ['LARGE_CASH_TRANSACTION', 'UNUSUAL_HOURS'],
-              risk_level: 'HIGH',
-              recommended_action: 'GENERATE_STR',
-            },
-            {
-              transaction_id: 'TXN-003',
-              customer_id: 'CUST-8834',
-              amount: 2300000,
-              currency: 'NGN',
-              timestamp: '2026-04-16T23:58:00',
-              transaction_type: 'withdrawal',
-              counterparty: 'ATM Lagos',
-              channel: 'atm',
-              anomaly_score: -0.198,
-              rules_triggered: ['UNUSUAL_HOURS'],
-              risk_level: 'MEDIUM',
-              recommended_action: 'REVIEW',
-            },
-            {
-              transaction_id: 'TXN-005',
-              customer_id: 'CUST-9901',
-              amount: 9800000,
-              currency: 'NGN',
-              timestamp: '2026-04-16T03:11:00',
-              transaction_type: 'transfer',
-              counterparty: 'Shell Company XYZ',
-              channel: 'web',
-              anomaly_score: -0.421,
-              rules_triggered: ['LARGE_CASH_TRANSACTION', 'UNUSUAL_HOURS', 'HIGH_VALUE_TRANSFER'],
-              risk_level: 'HIGH',
-              recommended_action: 'GENERATE_STR',
-            },
-          ],
-        })
-      } else {
-        setError(getApiErrorMessage(requestError, 'AML monitoring failed.'))
-      }
+      setError(getApiErrorMessage(requestError, 'AML monitoring failed.'))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
 
   const generateSTR = async (transaction) => {
     setStrLoading(transaction.transaction_id)
     setError('')
+    setStr(null)
 
     try {
       const { data } = await api.post(`/api/aml/generate-str/${transaction.transaction_id}`, transaction)
       setStr(data)
     } catch (requestError) {
-      if (authMode === 'mock') {
-        setStr({
-          report_reference: `STR-${transaction.transaction_id.slice(-4).toUpperCase()}`,
-          reporting_institution: 'WeGoComply Demo Bank',
-          subject_name: transaction.customer_id,
-          transaction_summary: `Customer conducted a ${transaction.transaction_type} of N${transaction.amount.toLocaleString()} via ${transaction.channel} at an unusual time.`,
-          grounds_for_suspicion:
-            'Transaction amount exceeds N5M threshold and occurred outside normal banking hours. Counterparty is an unverified entity.',
-          recommended_action:
-            'Freeze account pending investigation and file STR with NFIU within 24 hours.',
-          report_date: '2026-04-16',
-        })
-      } else {
-        setError(getApiErrorMessage(requestError, 'STR generation failed.'))
-      }
+      setError(getApiErrorMessage(requestError, 'STR generation failed.'))
+    } finally {
+      setStrLoading(null)
     }
-
-    setStrLoading(null)
   }
 
   const riskBadge = (level) =>

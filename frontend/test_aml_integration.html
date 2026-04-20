@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AML Integration Test</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .test-section {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .pass {
+            background: #064e3b;
+            border: 1px solid #059669;
+            color: #6ee7b7;
+        }
+        .fail {
+            background: #7f1d1d;
+            border: 1px solid #dc2626;
+            color: #fca5a5;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .summary {
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+        .summary.success {
+            background: #064e3b;
+            border: 2px solid #059669;
+            color: #6ee7b7;
+        }
+        .summary.failure {
+            background: #7f1d1d;
+            border: 2px solid #dc2626;
+            color: #fca5a5;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 AML Integration Test</h1>
+    <p>Testing frontend AML page integration with backend API</p>
+
+    <div class="test-section">
+        <h2>Test Configuration</h2>
+        <p><strong>Backend:</strong> http://localhost:8000</p>
+        <p><strong>Frontend:</strong> http://localhost:5173</p>
+        <p><strong>Mode:</strong> Mock (X-Mock-Roles: admin)</p>
+        <button id="runTests" onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        const BASE_URL = 'http://localhost:8000';
+        const MOCK_HEADERS = {
+            'Content-Type': 'application/json',
+            'X-Mock-Roles': 'admin',
+            'X-Mock-User': 'test-admin',
+            'X-Mock-Email': 'admin@test.com'
+        };
+
+        const SAMPLE_TRANSACTIONS = [
+            {
+                transaction_id: 'TXN-TEST-001',
+                customer_id: 'CUST-001',
+                amount: 7500000,
+                currency: 'NGN',
+                timestamp: new Date().toISOString(),
+                transaction_type: 'transfer',
+                counterparty: 'Unknown Corp',
+                channel: 'mobile'
+            },
+            {
+                transaction_id: 'TXN-TEST-002',
+                customer_id: 'CUST-002',
+                amount: 45000,
+                currency: 'NGN',
+                timestamp: new Date().toISOString(),
+                transaction_type: 'deposit',
+                counterparty: 'Salary',
+                channel: 'web'
+            }
+        ];
+
+        let passed = 0;
+        let failed = 0;
+
+        function logResult(testName, success, details = '') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `test-result ${success ? 'pass' : 'fail'}`;
+            resultDiv.innerHTML = `
+                <strong>${success ? '✓' : '✗'} ${testName}</strong>
+                ${details ? `<div style="margin-top: 5px; opacity: 0.8;">${details}</div>` : ''}
+            `;
+            resultsDiv.appendChild(resultDiv);
+
+            if (success) passed++;
+            else failed++;
+        }
+
+        function showSummary() {
+            const resultsDiv = document.getElementById('results');
+            const summaryDiv = document.createElement('div');
+            const allPassed = failed === 0;
+            summaryDiv.className = `summary ${allPassed ? 'success' : 'failure'}`;
+            summaryDiv.innerHTML = `
+                Test Summary: ${passed} passed, ${failed} failed (${passed + failed} total)
+                ${allPassed ? '🎉 All tests passed!' : '⚠️ Some tests failed'}
+            `;
+            resultsDiv.appendChild(summaryDiv);
+        }
+
+        async function testAMLMonitor() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/aml/monitor`, {
+                    method: 'POST',
+                    headers: MOCK_HEADERS,
+                    body: JSON.stringify({ transactions: SAMPLE_TRANSACTIONS })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Validate response structure
+                if (typeof data.total_analyzed !== 'number') {
+                    throw new Error('Missing total_analyzed field');
+                }
+                if (typeof data.flagged_count !== 'number') {
+                    throw new Error('Missing flagged_count field');
+                }
+                if (typeof data.clean_count !== 'number') {
+                    throw new Error('Missing clean_count field');
+                }
+                if (!Array.isArray(data.flagged_transactions)) {
+                    throw new Error('Missing or invalid flagged_transactions field');
+                }
+
+                // Validate totals match
+                if (data.total_analyzed !== SAMPLE_TRANSACTIONS.length) {
+                    throw new Error(`Expected ${SAMPLE_TRANSACTIONS.length} analyzed, got ${data.total_analyzed}`);
+                }
+
+                if (data.flagged_count + data.clean_count !== data.total_analyzed) {
+                    throw new Error('Flagged + clean count does not equal total analyzed');
+                }
+
+                logResult(
+                    'AML Monitor API',
+                    true,
+                    `Analyzed ${data.total_analyzed} transactions: ${data.flagged_count} flagged, ${data.clean_count} clean`
+                );
+
+                return data;
+            } catch (error) {
+                logResult('AML Monitor API', false, error.message);
+                return null;
+            }
+        }
+
+        async function testSTRGeneration(transaction) {
+            try {
+                const response = await fetch(`${BASE_URL}/api/aml/generate-str/${transaction.transaction_id}`, {
+                    method: 'POST',
+                    headers: MOCK_HEADERS,
+                    body: JSON.stringify(transaction)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Validate STR response structure
+                const requiredFields = [
+                    'report_reference',
+                    'reporting_institution',
+                    'subject_name',
+                    'transaction_summary',
+                    'grounds_for_suspicion',
+                    'recommended_action',
+                    'report_date'
+                ];
+
+                for (const field of requiredFields) {
+                    if (!data[field]) {
+                        throw new Error(`Missing required field: ${field}`);
+                    }
+                }
+
+                logResult(
+                    'STR Generation API',
+                    true,
+                    `Generated STR: ${data.report_reference}`
+                );
+
+                return data;
+            } catch (error) {
+                logResult('STR Generation API', false, error.message);
+                return null;
+            }
+        }
+
+        async function testFlaggedTransactionStructure(flaggedTx) {
+            try {
+                const requiredFields = [
+                    'transaction_id',
+                    'customer_id',
+                    'amount',
+                    'timestamp',
+                    'transaction_type',
+                    'counterparty',
+                    'channel',
+                    'anomaly_score',
+                    'rules_triggered',
+                    'risk_level',
+                    'recommended_action'
+                ];
+
+                for (const field of requiredFields) {
+                    if (flaggedTx[field] === undefined) {
+                        throw new Error(`Missing field: ${field}`);
+                    }
+                }
+
+                if (!Array.isArray(flaggedTx.rules_triggered)) {
+                    throw new Error('rules_triggered must be an array');
+                }
+
+                if (!['HIGH', 'MEDIUM'].includes(flaggedTx.risk_level)) {
+                    throw new Error(`Invalid risk_level: ${flaggedTx.risk_level}`);
+                }
+
+                if (!['GENERATE_STR', 'REVIEW'].includes(flaggedTx.recommended_action)) {
+                    throw new Error(`Invalid recommended_action: ${flaggedTx.recommended_action}`);
+                }
+
+                logResult(
+                    'Flagged Transaction Structure',
+                    true,
+                    `${flaggedTx.transaction_id}: ${flaggedTx.risk_level} risk, ${flaggedTx.rules_triggered.length} rules triggered`
+                );
+            } catch (error) {
+                logResult('Flagged Transaction Structure', false, error.message);
+            }
+        }
+
+        async function testRBACViewer() {
+            try {
+                const response = await fetch(`${BASE_URL}/api/aml/monitor`, {
+                    method: 'POST',
+                    headers: {
+                        ...MOCK_HEADERS,
+                        'X-Mock-Roles': 'viewer'
+                    },
+                    body: JSON.stringify({ transactions: SAMPLE_TRANSACTIONS })
+                });
+
+                if (response.status !== 403) {
+                    throw new Error(`Expected 403 Forbidden, got ${response.status}`);
+                }
+
+                logResult('RBAC - Viewer Blocked', true, 'Viewer correctly blocked from AML monitor');
+            } catch (error) {
+                logResult('RBAC - Viewer Blocked', false, error.message);
+            }
+        }
+
+        async function runAllTests() {
+            const button = document.getElementById('runTests');
+            button.disabled = true;
+            button.textContent = 'Running tests...';
+
+            document.getElementById('results').innerHTML = '';
+            passed = 0;
+            failed = 0;
+
+            // Test 1: AML Monitor
+            const monitorResult = await testAMLMonitor();
+
+            // Test 2: Flagged transaction structure (if any flagged)
+            if (monitorResult && monitorResult.flagged_transactions.length > 0) {
+                await testFlaggedTransactionStructure(monitorResult.flagged_transactions[0]);
+
+                // Test 3: STR Generation (if HIGH risk transaction exists)
+                const highRiskTx = monitorResult.flagged_transactions.find(tx => tx.risk_level === 'HIGH');
+                if (highRiskTx) {
+                    await testSTRGeneration(highRiskTx);
+                }
+            }
+
+            // Test 4: RBAC
+            await testRBACViewer();
+
+            // Show summary
+            showSummary();
+
+            button.disabled = false;
+            button.textContent = 'Run All Tests';
+        }
+    </script>
+</body>
+</html>
