@@ -1,7 +1,37 @@
 import React, { useState } from 'react'
-import { Shield, CheckCircle, XCircle, Loader } from 'lucide-react'
+import {
+  Shield, CheckCircle, XCircle, Loader,
+  AlertTriangle, User, Fingerprint, Camera
+} from 'lucide-react'
 import { useAuth } from '../auth/AuthProvider'
 import { getApiErrorMessage, useApiClient } from '../lib/api'
+
+const STEPS = [
+  { id: 1, label: 'NIN Verification', icon: Fingerprint, key: 'nin_verified' },
+  { id: 2, label: 'BVN Verification', icon: Shield, key: 'bvn_verified' },
+  { id: 3, label: 'Facial Match', icon: Camera, key: 'face_match' },
+]
+
+const riskStyle = {
+  LOW:    'text-green-400 bg-green-900/30 border border-green-800',
+  MEDIUM: 'text-yellow-400 bg-yellow-900/30 border border-yellow-800',
+  HIGH:   'text-red-400 bg-red-900/30 border border-red-800',
+}
+
+const MOCK_RESULT = {
+  status: 'VERIFIED',
+  risk_score: 0.12,
+  risk_level: 'LOW',
+  details: {
+    nin_verified: true,
+    bvn_verified: true,
+    face_match: true,
+    face_confidence: 0.94,
+    name: 'Adaeze Okonkwo',
+    dob: '1990-01-01',
+    phone: '080XXXXXXXX',
+  },
+}
 
 export default function KYC() {
   const { authMode } = useAuth()
@@ -11,60 +41,70 @@ export default function KYC() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [history, setHistory] = useState([])
 
-  const handleSubmit = async (event) => {
-    event.preventDefault()
+  const handleSubmit = async (e) => {
+    e.preventDefault()
     setLoading(true)
     setResult(null)
     setError('')
 
     try {
-      const formData = new FormData()
-      formData.append('nin', form.nin)
-      formData.append('bvn', form.bvn)
-      if (selfie) formData.append('selfie', selfie)
-
-      const { data } = await api.post('/api/kyc/verify', formData)
+      const fd = new FormData()
+      fd.append('nin', form.nin)
+      fd.append('bvn', form.bvn)
+      if (selfie) fd.append('selfie', selfie)
+      const { data } = await api.post('/api/kyc/verify', fd)
       setResult(data)
-    } catch (requestError) {
+      setHistory(prev => [{ ...data, nin: form.nin, ts: new Date().toLocaleTimeString() }, ...prev].slice(0, 5))
+    } catch (err) {
       if (authMode === 'mock') {
-        setResult({
-          status: 'VERIFIED',
-          risk_score: 0.12,
-          risk_level: 'LOW',
-          details: {
-            nin_verified: true,
-            bvn_verified: true,
-            face_match: true,
-            face_confidence: 0.94,
-            name: 'Demo User',
-            dob: '1990-01-01',
-            phone: '080XXXXXXXX',
-          },
-        })
+        setResult(MOCK_RESULT)
+        setHistory(prev => [{ ...MOCK_RESULT, nin: form.nin, ts: new Date().toLocaleTimeString() }, ...prev].slice(0, 5))
       } else {
-        setError(getApiErrorMessage(requestError, 'KYC verification failed.'))
+        setError(getApiErrorMessage(err, 'KYC verification failed.'))
       }
     }
-
     setLoading(false)
   }
 
-  const riskColor = {
-    LOW: 'text-green-400 bg-green-900/30',
-    MEDIUM: 'text-yellow-400 bg-yellow-900/30',
-    HIGH: 'text-red-400 bg-red-900/30',
-  }
-
   return (
-    <div className="max-w-2xl space-y-6 p-6">
+    <div className="p-6 space-y-6 max-w-3xl">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
+        <h1 className="text-2xl font-bold flex items-center gap-2">
           <Shield className="text-blue-500" size={22} /> KYC Verification
         </h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Multi-source identity verification with AI risk scoring
+        <p className="text-sm text-gray-400 mt-1">
+          Multi-source identity verification — NIN · BVN · Facial Match · AI Risk Scoring
         </p>
+      </div>
+
+      {/* Verification steps indicator */}
+      <div className="grid grid-cols-3 gap-3">
+        {STEPS.map((step) => (
+          <div key={step.id} className={`rounded-xl border p-3 flex items-center gap-3 transition-colors ${
+            result
+              ? result.details[step.key]
+                ? 'border-green-800 bg-green-900/20'
+                : 'border-red-800 bg-red-900/20'
+              : 'border-gray-800 bg-gray-900'
+          }`}>
+            <step.icon size={16} className={
+              result
+                ? result.details[step.key] ? 'text-green-400' : 'text-red-400'
+                : 'text-gray-500'
+            } />
+            <div>
+              <div className="text-xs font-medium text-gray-300">{step.label}</div>
+              <div className="text-xs text-gray-500 mt-0.5">
+                {result
+                  ? result.details[step.key] ? '✓ Verified' : '✗ Failed'
+                  : 'Pending'
+                }
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
 
       {error && (
@@ -73,98 +113,147 @@ export default function KYC() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-5">
-        <div>
-          <label className="mb-1 block text-sm text-gray-400">
-            NIN (National Identification Number)
-          </label>
-          <input
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            placeholder="12345678901"
-            value={form.nin}
-            onChange={(event) => setForm({ ...form, nin: event.target.value })}
-            required
-          />
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">NIN (11 digits)</label>
+            <input
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+              placeholder="12345678901"
+              value={form.nin}
+              maxLength={11}
+              onChange={e => setForm({ ...form, nin: e.target.value.replace(/\D/g, '') })}
+              required
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">BVN (11 digits)</label>
+            <input
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-500"
+              placeholder="22334455667"
+              value={form.bvn}
+              maxLength={11}
+              onChange={e => setForm({ ...form, bvn: e.target.value.replace(/\D/g, '') })}
+              required
+            />
+          </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-sm text-gray-400">
-            BVN (Bank Verification Number)
-          </label>
-          <input
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            placeholder="12345678901"
-            value={form.bvn}
-            onChange={(event) => setForm({ ...form, bvn: event.target.value })}
-            required
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm text-gray-400">Selfie / Photo ID</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-400"
-            required
-            onChange={(event) => setSelfie(event.target.files[0])}
-          />
+          <label className="text-sm text-gray-400 block mb-1">Selfie / Photo ID</label>
+          <div className={`border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
+            selfie ? 'border-blue-600 bg-blue-900/10' : 'border-gray-700 hover:border-gray-600'
+          }`}>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              id="selfie-upload"
+              onChange={e => setSelfie(e.target.files[0])}
+              required
+            />
+            <label htmlFor="selfie-upload" className="cursor-pointer">
+              <Camera size={24} className={`mx-auto mb-2 ${selfie ? 'text-blue-400' : 'text-gray-500'}`} />
+              <div className="text-sm text-gray-400">
+                {selfie ? selfie.name : 'Click to upload selfie or ID photo'}
+              </div>
+              <div className="text-xs text-gray-600 mt-1">JPG, PNG — used for facial verification</div>
+            </label>
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+          className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg text-sm transition-colors"
         >
-          {loading ? (
-            <>
-              <Loader size={16} className="animate-spin" /> Verifying...
-            </>
-          ) : (
-            'Verify Identity'
-          )}
+          {loading
+            ? <><Loader size={16} className="animate-spin" /> Verifying identity...</>
+            : <><Shield size={16} /> Verify Identity</>
+          }
         </button>
       </form>
 
+      {/* Result */}
       {result && (
-        <div className="space-y-4 rounded-xl border border-gray-800 bg-gray-900 p-5">
+        <div className={`rounded-xl border p-5 space-y-4 ${
+          result.status === 'VERIFIED'
+            ? 'border-green-800 bg-green-900/10'
+            : 'border-red-800 bg-red-900/10'
+        }`}>
           <div className="flex items-center gap-3">
-            {result.status === 'VERIFIED' ? (
-              <CheckCircle className="text-green-400" size={24} />
-            ) : (
-              <XCircle className="text-red-400" size={24} />
-            )}
+            {result.status === 'VERIFIED'
+              ? <CheckCircle className="text-green-400" size={28} />
+              : <XCircle className="text-red-400" size={28} />
+            }
             <div>
-              <div className="text-lg font-bold">{result.status}</div>
-              <div className="text-xs text-gray-400">Identity verification complete</div>
+              <div className="text-xl font-bold">
+                {result.status === 'VERIFIED' ? 'Identity Verified' : 'Verification Failed'}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {result.status === 'VERIFIED'
+                  ? `Welcome, ${result.details.name || 'Customer'}`
+                  : 'One or more checks failed. Review details below.'
+                }
+              </div>
             </div>
-            <span className={`ml-auto rounded-full px-3 py-1 text-sm font-bold ${riskColor[result.risk_level]}`}>
+            <span className={`ml-auto text-sm font-bold px-3 py-1 rounded-full ${riskStyle[result.risk_level]}`}>
               {result.risk_level} RISK
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 text-sm">
+          {/* Detail grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
             {[
-              ['NIN Verified', result.details.nin_verified],
-              ['BVN Verified', result.details.bvn_verified],
-              ['Face Match', result.details.face_match],
-              ['Face Confidence', `${(result.details.face_confidence * 100).toFixed(0)}%`],
-              ['Name', result.details.name],
-              ['Risk Score', result.risk_score],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-lg bg-gray-800 p-3">
+              ['NIN Verified', result.details.nin_verified, 'bool'],
+              ['BVN Verified', result.details.bvn_verified, 'bool'],
+              ['Face Match', result.details.face_match, 'bool'],
+              ['Face Confidence', `${(result.details.face_confidence * 100).toFixed(0)}%`, 'text'],
+              ['Risk Score', result.risk_score.toFixed(2), 'text'],
+              ['Name', result.details.name || '—', 'text'],
+              ['Date of Birth', result.details.dob || '—', 'text'],
+              ['Phone', result.details.phone || '—', 'text'],
+            ].map(([label, value, type]) => (
+              <div key={label} className="bg-gray-800/60 rounded-lg p-3">
                 <div className="text-xs text-gray-400">{label}</div>
-                <div className="mt-0.5 font-medium">
-                  {typeof value === 'boolean' ? (
-                    value ? (
-                      <span className="text-green-400">Yes</span>
-                    ) : (
-                      <span className="text-red-400">No</span>
-                    )
-                  ) : (
-                    value
-                  )}
+                <div className="font-medium mt-0.5">
+                  {type === 'bool'
+                    ? value
+                      ? <span className="text-green-400">✓ Yes</span>
+                      : <span className="text-red-400">✗ No</span>
+                    : <span className="text-gray-200">{value}</span>
+                  }
                 </div>
+              </div>
+            ))}
+          </div>
+
+          {result.risk_level === 'HIGH' && (
+            <div className="flex items-start gap-2 bg-red-900/20 border border-red-800 rounded-lg p-3 text-xs text-red-300">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+              High risk customer detected. Manual review required before account activation per CBN KYC Guidelines.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Recent verifications */}
+      {history.length > 0 && (
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
+          <div className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+            <User size={14} /> Recent Verifications (this session)
+          </div>
+          <div className="space-y-2">
+            {history.map((h, i) => (
+              <div key={i} className="flex items-center gap-3 text-xs text-gray-400 bg-gray-800/50 rounded-lg px-3 py-2">
+                {h.status === 'VERIFIED'
+                  ? <CheckCircle size={12} className="text-green-400" />
+                  : <XCircle size={12} className="text-red-400" />
+                }
+                <span className="font-mono">{h.nin?.slice(0, 4)}****{h.nin?.slice(-3)}</span>
+                <span className={`px-1.5 py-0.5 rounded text-xs ${riskStyle[h.risk_level]}`}>{h.risk_level}</span>
+                <span className="ml-auto text-gray-600">{h.ts}</span>
               </div>
             ))}
           </div>
