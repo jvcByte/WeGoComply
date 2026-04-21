@@ -37,7 +37,7 @@ app.include_router(kyc.router, prefix="/api/kyc", tags=["KYC"])
 app.include_router(aml.router, prefix="/api/aml", tags=["AML"])
 app.include_router(tax.router, prefix="/api/tax", tags=["Tax"])
 app.include_router(regulatory.router, prefix="/api/regulatory", tags=["Regulatory"])
-app.include_router(compliance.router, prefix="/api/compliance", tags=["Compliance"])
+app.include_router(compliance.router, prefix="/api/compliance", tags=["Compliance Posture"])
 app.include_router(verifyme.router, prefix="/api/verifyme", tags=["VerifyMe"])
 app.include_router(nimc_mock.router, prefix="/api/mock/nimc", tags=["NIMC Mock"])
 

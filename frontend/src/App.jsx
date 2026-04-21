@@ -5,6 +5,7 @@ import {
   Activity,
   FileText,
   Bell,
+  TrendingUp,
   LogOut,
   Loader,
   LockKeyhole,
@@ -19,6 +20,7 @@ import KYC from './pages/KYC'
 import AML from './pages/AML'
 import TaxVerification from './pages/TaxVerification'
 import Regulatory from './pages/Regulatory'
+import CompliancePosture from './pages/CompliancePosture'
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: Activity, roles: ALL_ROLES },
@@ -47,6 +49,7 @@ const nav = [
     roles: [USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST],
   },
   { to: '/regulatory', label: 'Regulatory', icon: Bell, roles: ALL_ROLES },
+  { to: '/posture',    label: 'Compliance Posture', icon: TrendingUp, roles: ALL_ROLES },
 ]
 
 export default function App() {
@@ -220,6 +223,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={ALL_ROLES}>
                 <Regulatory />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/posture"
+            element={
+              <ProtectedRoute allowedRoles={ALL_ROLES}>
+                <CompliancePosture />
               </ProtectedRoute>
             }
           />
