@@ -9,9 +9,11 @@ from repositories.audit_repository import AppendOnlyAuditRepository
 from repositories.regulatory_repository import RegulatoryCircularRepository
 from services.aml_service import AMLService
 from services.audit_service import AuditService
+from services.compliance_service import ComplianceService
 from services.kyc_service import KYCService
 from services.regulatory_service import RegulatoryService
 from services.tax_service import TaxService
+from services.verifyme_service import VerifyMeService
 
 
 @lru_cache
@@ -67,3 +69,13 @@ def get_tax_service() -> TaxService:
 @lru_cache
 def get_regulatory_service() -> RegulatoryService:
     return RegulatoryService(get_settings(), get_regulatory_repository())
+
+
+@lru_cache
+def get_compliance_service() -> ComplianceService:
+    return ComplianceService()
+
+
+@lru_cache
+def get_verifyme_service() -> VerifyMeService:
+    return VerifyMeService(get_settings())

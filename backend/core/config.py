@@ -60,6 +60,17 @@ class Settings:
     azure_document_intelligence_endpoint: str | None
     azure_document_intelligence_key: str | None
     aml_model_path: Path
+    verifyme_secret_key: str | None
+    verifyme_base_url: str
+    # Identity provider configuration
+    identity_mode: str
+    identity_provider: str
+    # NIMC configuration
+    nimc_username: str | None
+    nimc_password: str | None
+    nimc_orgid: str | None
+    nimc_base_url: str
+    nimc_vpn_required: bool
 
     @property
     def is_live(self) -> bool:
@@ -103,6 +114,11 @@ class Settings:
         if self.rate_limit_enabled and self.is_live and not self.redis_url:
             raise ConfigurationError(
                 message="Live mode requires REDIS_URL for rate limiting.",
+            )
+
+        if self.is_live and not self.verifyme_secret_key:
+            raise ConfigurationError(
+                message="Live mode requires VERIFYME_SECRET_KEY for NIN verification.",
             )
 
         if not self.is_live:
@@ -258,4 +274,16 @@ def get_settings() -> Settings:
         azure_document_intelligence_endpoint=os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"),
         azure_document_intelligence_key=secret_resolver.resolve("AZURE_DOCUMENT_INTELLIGENCE_KEY"),
         aml_model_path=_resolve_model_path(os.getenv("AML_MODEL_PATH")),
+        # Identity provider configuration
+        identity_mode=os.getenv("IDENTITY_MODE", "mock"),
+        identity_provider=os.getenv("IDENTITY_PROVIDER", "mock"),
+        # VerifyMe configuration
+        verifyme_secret_key=secret_resolver.resolve("VERIFYME_SECRET_KEY"),
+        verifyme_base_url=os.getenv("VERIFYME_BASE_URL", "https://vapi.verifyme.ng/v1/verifications/identities"),
+        # NIMC configuration
+        nimc_username=os.getenv("NIMC_USERNAME"),
+        nimc_password=secret_resolver.resolve("NIMC_PASSWORD"),
+        nimc_orgid=os.getenv("NIMC_ORGID"),
+        nimc_base_url=os.getenv("NIMC_BASE_URL", "https://api.nimc.gov.ng"),
+        nimc_vpn_required=os.getenv("NIMC_VPN_REQUIRED", "true").lower() == "true",
     )
