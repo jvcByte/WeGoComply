@@ -21,7 +21,33 @@ ERROR_RESPONSES = {
 }
 
 
-@router.post("/monitor", response_model=AMLMonitorResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/monitor",
+    response_model=AMLMonitorResponse,
+    responses=ERROR_RESPONSES,
+    summary="Monitor Transactions for AML",
+    description="""
+Analyze a batch of transactions for suspicious activity using two detection layers:
+
+**Layer 1 — ML (Isolation Forest):**
+Detects statistical anomalies based on transaction amount and time of day.
+Trained on normal Nigerian fintech transaction patterns.
+
+**Layer 2 — CBN Rules Engine:**
+- `LARGE_CASH_TRANSACTION` — amount ≥ ₦5,000,000 (CBN reporting threshold)
+- `UNUSUAL_HOURS` — transaction before 05:00 or after 23:00
+- `HIGH_VALUE_TRANSFER` — transfer type with amount > ₦1,000,000
+
+**Risk classification:**
+- `HIGH` — ML anomaly AND rules triggered → `GENERATE_STR`
+- `MEDIUM` — ML anomaly OR rules triggered → `REVIEW`
+- `LOW` — neither → `APPROVE`
+
+**Regulatory basis:** CBN AML/CFT Rules · CBN March 2026 Baseline Standards for Automated AML Solutions.
+
+**Required roles:** `admin`, `compliance_officer`, `analyst`
+""",
+)
 async def monitor_transactions(
     request: Request,
     batch: TransactionBatchRequest,
@@ -58,7 +84,35 @@ async def monitor_transactions(
         raise
 
 
-@router.post("/generate-str/{transaction_id}", response_model=STRReportResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/generate-str/{transaction_id}",
+    response_model=STRReportResponse,
+    responses=ERROR_RESPONSES,
+    summary="Generate Suspicious Transaction Report (STR)",
+    description="""
+Auto-generate an NFIU-compliant Suspicious Transaction Report for a flagged transaction.
+
+**Process:**
+1. Transaction details passed to Azure OpenAI GPT-4o
+2. AI generates professional STR with grounds for suspicion and recommended action
+3. Report returned in NFIU submission format
+
+**NFIU requirement:** STRs must be filed within **24 hours** of detecting suspicious activity.
+
+**STR fields returned:**
+- `report_reference` — unique STR reference number
+- `reporting_institution` — your institution name
+- `subject_name` — customer identifier
+- `transaction_summary` — plain-language description
+- `grounds_for_suspicion` — specific reasons for filing
+- `recommended_action` — next steps for compliance officer
+- `report_date` — date of report generation
+
+**Mock mode:** Returns a pre-filled STR without calling Azure OpenAI.
+
+**Required roles:** `admin`, `compliance_officer` (analysts cannot generate STRs)
+""",
+)
 async def create_str(
     request: Request,
     transaction_id: str,

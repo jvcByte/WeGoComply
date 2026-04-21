@@ -29,7 +29,27 @@ ERROR_RESPONSES = {
 }
 
 
-@router.post("/verify", response_model=KYCVerificationResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/verify",
+    response_model=KYCVerificationResponse,
+    responses=ERROR_RESPONSES,
+    summary="Verify Customer Identity",
+    description="""
+Perform full KYC verification for a new customer using multi-source identity checks.
+
+**Verification steps:**
+1. **NIN** — verified against NIMC database via Dojah API
+2. **BVN** — verified against CBN database via Dojah API
+3. **Facial match** — selfie compared to ID photo via Azure Face API
+4. **Risk scoring** — ML model calculates LOW / MEDIUM / HIGH risk
+
+**Regulatory basis:** CBN KYC Guidelines — all customers must be verified before account activation.
+
+**Mock mode:** Returns `VERIFIED` with `risk_level: LOW` for any input.
+
+**Required roles:** `admin`, `compliance_officer`, `analyst`
+""",
+)
 async def verify_customer(
     request: Request,
     payload: Annotated[KYCVerificationInput, Depends(KYCVerificationInput.as_form)],
@@ -76,7 +96,24 @@ async def verify_customer(
         raise
 
 
-@router.post("/risk-score", response_model=KYCRiskScoreResponse, responses=ERROR_RESPONSES)
+@router.post(
+    "/risk-score",
+    response_model=KYCRiskScoreResponse,
+    responses=ERROR_RESPONSES,
+    summary="Calculate Customer Risk Score",
+    description="""
+Calculate a risk score (0.0–1.0) from existing verification results without re-running full KYC.
+
+**Risk levels:**
+- `LOW` — score < 0.3 (auto-approve)
+- `MEDIUM` — score 0.3–0.7 (manual review recommended)
+- `HIGH` — score > 0.7 (escalate to compliance officer)
+
+**Use case:** Re-score a customer after updating their verification status.
+
+**Required roles:** `admin`, `compliance_officer`, `analyst`
+""",
+)
 async def get_risk_score(
     request: Request,
     customer_data: KYCRiskScoreRequest,
