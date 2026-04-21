@@ -166,6 +166,14 @@ Submit a receipt or bill to FIRS ATRS for real-time tax remittance reporting.
 """,
 )
 async def report_bill(
+    request: Request,
+    payload: BillReportRequest,
+    current_user: AuthenticatedUser = Depends(
+        require_roles(UserRole.ADMIN, UserRole.COMPLIANCE_OFFICER)
+    ),
+    audit_service: AuditService = Depends(get_audit_service),
+    service: TaxService = Depends(get_tax_service),
+) -> BillReportResponse:
     try:
         result = await service.report_bill(payload)
         audit_service.log_action(
