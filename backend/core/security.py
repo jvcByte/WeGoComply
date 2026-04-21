@@ -41,7 +41,9 @@ class MockIdentityProvider:
         return user
 
 
-class AzureADB2CIdentityProvider:
+class EntraIDIdentityProvider:
+    """Validates Microsoft Entra ID (formerly Azure AD) Bearer tokens."""
+
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._metadata: dict[str, str] | None = None
@@ -62,7 +64,7 @@ class AzureADB2CIdentityProvider:
                 credentials.credentials,
                 signing_key.key,
                 algorithms=["RS256"],
-                audience=self.settings.azure_ad_b2c_client_id,
+                audience=self.settings.entra_client_id,
                 issuer=metadata["issuer"],
                 options={"require": ["exp", "iat", "iss", "aud"]},
             )
@@ -91,26 +93,18 @@ class AzureADB2CIdentityProvider:
         if self._metadata is not None:
             return self._metadata
 
-        if self.settings.azure_ad_b2c_metadata_url:
-            try:
-                response = httpx.get(self.settings.azure_ad_b2c_metadata_url, timeout=10)
-                response.raise_for_status()
-                data = response.json()
-            except httpx.HTTPError as exc:
-                raise ConfigurationError(
-                    message="Unable to fetch Azure AD B2C OpenID metadata.",
-                    details={"metadata_url": self.settings.azure_ad_b2c_metadata_url},
-                ) from exc
-
-            issuer = data.get("issuer")
-            jwks_uri = data.get("jwks_uri")
+        # Derive standard Entra ID endpoints from tenant ID if not explicitly set
+        if self.settings.entra_tenant_id:
+            tid = self.settings.entra_tenant_id
+            issuer  = self.settings.entra_issuer  or f"https://login.microsoftonline.com/{tid}/v2.0"
+            jwks_uri = self.settings.entra_jwks_url or f"https://login.microsoftonline.com/{tid}/discovery/v2.0/keys"
         else:
-            issuer = self.settings.azure_ad_b2c_issuer
-            jwks_uri = self.settings.azure_ad_b2c_jwks_url
+            issuer   = self.settings.entra_issuer
+            jwks_uri = self.settings.entra_jwks_url
 
         if not issuer or not jwks_uri:
             raise ConfigurationError(
-                message="Azure AD B2C auth requires an issuer and JWKS URI.",
+                message="Entra ID auth requires ENTRA_TENANT_ID or both ENTRA_ISSUER and ENTRA_JWKS_URL.",
             )
 
         self._metadata = {"issuer": issuer, "jwks_uri": jwks_uri}
@@ -127,7 +121,7 @@ def get_identity_provider():
     settings = get_settings()
     if settings.auth_mode == AuthMode.MOCK:
         return MockIdentityProvider(settings)
-    return AzureADB2CIdentityProvider(settings)
+    return EntraIDIdentityProvider(settings)
 
 
 def get_current_user(

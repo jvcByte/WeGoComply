@@ -22,7 +22,7 @@ class AppMode(str, Enum):
 
 class AuthMode(str, Enum):
     MOCK = "mock"
-    AZURE_AD_B2C = "azure_ad_b2c"
+    ENTRA_ID = "entra_id"
 
 
 @dataclass(frozen=True)
@@ -39,10 +39,10 @@ class Settings:
     mock_auth_email: str
     mock_auth_name: str
     mock_auth_roles: tuple[str, ...]
-    azure_ad_b2c_client_id: str | None
-    azure_ad_b2c_metadata_url: str | None
-    azure_ad_b2c_issuer: str | None
-    azure_ad_b2c_jwks_url: str | None
+    entra_client_id: str | None
+    entra_tenant_id: str | None
+    entra_issuer: str | None
+    entra_jwks_url: str | None
     rate_limit_enabled: bool
     rate_limit_requests: int
     rate_limit_window_seconds: int
@@ -83,21 +83,21 @@ class Settings:
                 details={"headers": self.cors_headers},
             )
 
-        if self.auth_mode == AuthMode.AZURE_AD_B2C:
+        if self.auth_mode == AuthMode.ENTRA_ID:
             auth_missing = []
-            if not self.azure_ad_b2c_client_id:
-                auth_missing.append("AZURE_AD_B2C_CLIENT_ID")
-            if not self.azure_ad_b2c_metadata_url and (not self.azure_ad_b2c_issuer or not self.azure_ad_b2c_jwks_url):
-                auth_missing.extend(["AZURE_AD_B2C_METADATA_URL or AZURE_AD_B2C_ISSUER", "AZURE_AD_B2C_METADATA_URL or AZURE_AD_B2C_JWKS_URL"])
+            if not self.entra_client_id:
+                auth_missing.append("ENTRA_CLIENT_ID")
+            if not self.entra_tenant_id and (not self.entra_issuer or not self.entra_jwks_url):
+                auth_missing.extend(["ENTRA_TENANT_ID or (ENTRA_ISSUER + ENTRA_JWKS_URL)"])
             if auth_missing:
                 raise ConfigurationError(
-                    message="Azure AD B2C authentication is enabled but not fully configured.",
+                    message="Entra ID authentication is enabled but not fully configured.",
                     details={"missing": auth_missing},
                 )
 
-        if self.is_live and self.auth_mode != AuthMode.AZURE_AD_B2C:
+        if self.is_live and self.auth_mode != AuthMode.ENTRA_ID:
             raise ConfigurationError(
-                message="Live mode requires Azure AD B2C authentication.",
+                message="Live mode requires Entra ID authentication.",
                 details={"auth_mode": self.auth_mode.value},
             )
 
@@ -143,7 +143,7 @@ def _parse_auth_mode(raw_mode: str | None) -> AuthMode:
         return AuthMode(mode)
     except ValueError as exc:
         raise ConfigurationError(
-            message="AUTH_MODE must be either 'mock' or 'azure_ad_b2c'.",
+            message="AUTH_MODE must be either 'mock' or 'entra_id'.",
             details={"received": raw_mode},
         ) from exc
 
@@ -250,10 +250,10 @@ def get_settings() -> Settings:
         mock_auth_email=os.getenv("MOCK_AUTH_EMAIL", "admin@wegocomply.local"),
         mock_auth_name=os.getenv("MOCK_AUTH_NAME", "Demo Admin"),
         mock_auth_roles=_parse_csv(os.getenv("MOCK_AUTH_ROLES"), default=("admin",)),
-        azure_ad_b2c_client_id=os.getenv("AZURE_AD_B2C_CLIENT_ID"),
-        azure_ad_b2c_metadata_url=os.getenv("AZURE_AD_B2C_METADATA_URL"),
-        azure_ad_b2c_issuer=os.getenv("AZURE_AD_B2C_ISSUER"),
-        azure_ad_b2c_jwks_url=os.getenv("AZURE_AD_B2C_JWKS_URL"),
+        entra_client_id=os.getenv("ENTRA_CLIENT_ID"),
+        entra_tenant_id=os.getenv("ENTRA_TENANT_ID"),
+        entra_issuer=os.getenv("ENTRA_ISSUER"),
+        entra_jwks_url=os.getenv("ENTRA_JWKS_URL"),
         rate_limit_enabled=_parse_bool(os.getenv("RATE_LIMIT_ENABLED"), default=True),
         rate_limit_requests=_parse_positive_int(os.getenv("RATE_LIMIT_REQUESTS"), default=60, field_name="RATE_LIMIT_REQUESTS"),
         rate_limit_window_seconds=_parse_positive_int(

@@ -10,8 +10,8 @@ const authHttp = axios.create({
 })
 
 const msalInstance =
-  authConfig.mode === 'azure_ad_b2c' && authConfig.azure.isConfigured
-    ? new PublicClientApplication(authConfig.azure.msal)
+  authConfig.mode === 'entra_id' && authConfig.entra.isConfigured
+    ? new PublicClientApplication(authConfig.entra.msal)
     : null
 
 function formatAuthError(error, fallbackMessage) {
@@ -24,24 +24,22 @@ async function fetchCurrentUser(headers) {
   return data
 }
 
-async function acquireAzureHeaders(account) {
+async function acquireEntraHeaders(account) {
   if (!msalInstance || !account) {
-    throw new Error('No authenticated Azure AD B2C account is available.')
+    throw new Error('No authenticated Entra ID account is available.')
   }
 
   try {
     const tokenResult = await msalInstance.acquireTokenSilent({
       account,
-      scopes: authConfig.azure.scopes,
+      scopes: authConfig.entra.scopes,
     })
-    return {
-      Authorization: `Bearer ${tokenResult.accessToken}`,
-    }
+    return { Authorization: `Bearer ${tokenResult.accessToken}` }
   } catch (error) {
     if (error instanceof InteractionRequiredAuthError) {
       await msalInstance.acquireTokenRedirect({
         account,
-        scopes: authConfig.azure.scopes,
+        scopes: authConfig.entra.scopes,
       })
     }
     throw error
@@ -83,13 +81,13 @@ export function AuthProvider({ children }) {
       }
     }
 
-    async function initializeAzureSession() {
-      if (!msalInstance || !authConfig.azure.isConfigured) {
+    async function initializeEntraSession() {
+      if (!msalInstance || !authConfig.entra.isConfigured) {
         setAuthState({
           status: 'error',
           user: null,
           account: null,
-          error: authConfig.azure.configError || 'Azure AD B2C is not configured.',
+          error: authConfig.entra.configError || 'Entra ID is not configured.',
         })
         return
       }
@@ -105,27 +103,17 @@ export function AuthProvider({ children }) {
 
         if (!account) {
           if (!cancelled) {
-            setAuthState({
-              status: 'unauthenticated',
-              user: null,
-              account: null,
-              error: '',
-            })
+            setAuthState({ status: 'unauthenticated', user: null, account: null, error: '' })
           }
           return
         }
 
         msalInstance.setActiveAccount(account)
-        const headers = await acquireAzureHeaders(account)
+        const headers = await acquireEntraHeaders(account)
         const user = await fetchCurrentUser(headers)
 
         if (!cancelled) {
-          setAuthState({
-            status: 'authenticated',
-            user,
-            account,
-            error: '',
-          })
+          setAuthState({ status: 'authenticated', user, account, error: '' })
         }
       } catch (error) {
         if (!cancelled) {
@@ -133,14 +121,14 @@ export function AuthProvider({ children }) {
             status: 'error',
             user: null,
             account: null,
-            error: formatAuthError(error, 'Unable to initialize Azure AD B2C authentication.'),
+            error: formatAuthError(error, 'Unable to initialize Entra ID authentication.'),
           })
         }
       }
     }
 
-    if (authConfig.mode === 'azure_ad_b2c') {
-      initializeAzureSession()
+    if (authConfig.mode === 'entra_id') {
+      initializeEntraSession()
     } else {
       initializeMockSession()
     }
@@ -151,28 +139,28 @@ export function AuthProvider({ children }) {
   }, [refreshNonce])
 
   async function login() {
-    if (authConfig.mode !== 'azure_ad_b2c') {
+    if (authConfig.mode !== 'entra_id') {
       setRefreshNonce((value) => value + 1)
       return
     }
 
-    if (!msalInstance || !authConfig.azure.isConfigured) {
+    if (!msalInstance || !authConfig.entra.isConfigured) {
       setAuthState((currentState) => ({
         ...currentState,
         status: 'error',
-        error: authConfig.azure.configError || 'Azure AD B2C is not configured.',
+        error: authConfig.entra.configError || 'Entra ID is not configured.',
       }))
       return
     }
 
     await msalInstance.loginRedirect({
-      scopes: authConfig.azure.scopes,
+      scopes: authConfig.entra.scopes,
       redirectStartPage: window.location.href,
     })
   }
 
   async function logout() {
-    if (authConfig.mode !== 'azure_ad_b2c' || !msalInstance) {
+    if (authConfig.mode !== 'entra_id' || !msalInstance) {
       return
     }
 
@@ -190,7 +178,7 @@ export function AuthProvider({ children }) {
       return {}
     }
 
-    return acquireAzureHeaders(authState.account)
+    return acquireEntraHeaders(authState.account)
   }
 
   const value = {

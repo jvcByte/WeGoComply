@@ -75,8 +75,8 @@ export default function App() {
           </div>
           <h1 className="mt-5 text-2xl font-bold">Secure Sign-In Required</h1>
           <p className="mt-2 text-sm text-gray-400">
-            {authMode === 'azure_ad_b2c'
-              ? 'Authenticate with Azure AD B2C to access role-based compliance workflows.'
+            {authMode === 'entra_id'
+              ? 'Sign in with your Microsoft Entra ID account to access role-based compliance workflows.'
               : 'Mock authentication is enabled, but the local session could not be initialized.'}
           </p>
           {error && (
@@ -88,7 +88,7 @@ export default function App() {
             onClick={login}
             className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
           >
-            {authMode === 'azure_ad_b2c' ? 'Sign in with Azure AD B2C' : 'Retry mock session'}
+            {authMode === 'azure_ad_b2c' ? 'Sign in with Microsoft Entra ID' : 'Retry mock session'}
           </button>
         </div>
       </div>
@@ -130,7 +130,7 @@ export default function App() {
         <div className="border-t border-gray-800 p-4 text-xs text-gray-600">
           <div>RegTech Hackathon 2026</div>
           <div className="mt-2 rounded-lg border border-gray-800 bg-gray-950 px-2 py-1 text-[11px] uppercase tracking-wide text-gray-500">
-            {authMode === 'azure_ad_b2c' ? 'Azure AD B2C' : 'Mock Auth'}
+            {authMode === 'entra_id' ? 'Entra ID' : 'Mock Auth'}
           </div>
         </div>
       </aside>
@@ -156,7 +156,7 @@ export default function App() {
                   {formatRole(role)}
                 </span>
               ))}
-              {authMode === 'azure_ad_b2c' && (
+              {authMode === 'entra_id' && (
                 <button
                   onClick={logout}
                   className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm text-gray-200 transition-colors hover:border-gray-600 hover:bg-gray-800"
