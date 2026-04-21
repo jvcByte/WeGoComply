@@ -148,7 +148,7 @@ async def get_tin_metrics(
         total_customers=5000,
         verified_tin_customers=4550,
         accounts_restricted_missing_tin=50,
-        days_until_firs_deadline=15,
+        days_until_firs_deadline=30,
     )
 
 

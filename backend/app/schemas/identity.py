@@ -68,7 +68,7 @@ class IdentityData(BaseModel):
 
 class RiskAssessment(BaseModel):
     """Risk assessment results"""
-    risk_level: Optional[str] = Field(None, regex="^(LOW|MEDIUM|HIGH)$")
+    risk_level: Optional[str] = Field(None, pattern="^(LOW|MEDIUM|HIGH)$")
     risk_score: Optional[float] = Field(None, ge=0.0, le=1.0)
     risk_factors: List[str] = Field(default_factory=list)
     recommendations: List[str] = Field(default_factory=list)
@@ -122,7 +122,7 @@ class BulkVerificationRequest(BaseModel):
     """Request for bulk identity verification"""
     verifications: List[IdentityRequest]
     callback_url: Optional[str] = None
-    priority: Optional[str] = Field("normal", regex="^(low|normal|high)$")
+    priority: Optional[str] = Field("normal", pattern="^(low|normal|high)$")
 
 
 class BulkVerificationResponse(BaseModel):

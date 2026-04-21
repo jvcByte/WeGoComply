@@ -15,6 +15,7 @@ from app.services.identity.providers.base import IdentityProvider, ProviderConfi
 from app.services.identity.providers.dojah_provider import DojahProvider
 from app.services.identity.providers.verifyme_provider import VerifyMeProvider
 from app.services.identity.providers.mock_provider import MockProvider
+from app.services.identity.providers.nimc_mock_provider import NIMCMockProvider
 from app.schemas.identity import ProviderConfig as ProviderConfigSchema
 
 logger = logging.getLogger(__name__)
@@ -222,6 +223,8 @@ class IdentityProviderFactory:
                 # NIMC provider not implemented yet
                 logger.warning("NIMC provider not implemented yet")
                 return None
+            elif provider_name == "nimc_mock":
+                return NIMCMockProvider()
             else:
                 logger.error(f"Unknown provider: {provider_name}")
                 return None

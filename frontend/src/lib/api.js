@@ -3,7 +3,7 @@ import { useAuth } from '../auth/AuthProvider'
 import { authConfig } from '../auth/config'
 
 const apiClient = axios.create({
-  baseURL: authConfig.apiBaseUrl || undefined,
+  baseURL: authConfig.apiBaseUrl || 'http://localhost:8000',
 })
 
 export function useApiClient() {

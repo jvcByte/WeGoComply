@@ -11,7 +11,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 from dataclasses import dataclass
 
-from schemas.identity import IdentityRequest, IdentityResponse
+from app.schemas.identity import IdentityRequest, IdentityResponse
 
 
 @dataclass

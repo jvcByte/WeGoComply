@@ -71,6 +71,11 @@ class Settings:
     nimc_orgid: str | None
     nimc_base_url: str
     nimc_vpn_required: bool
+    # NIMC Mock configuration
+    nimc_mock_username: str
+    nimc_mock_password: str
+    nimc_mock_orgid: str
+    nimc_mock_token_expiry_minutes: int
 
     @property
     def is_live(self) -> bool:
@@ -286,4 +291,9 @@ def get_settings() -> Settings:
         nimc_orgid=os.getenv("NIMC_ORGID"),
         nimc_base_url=os.getenv("NIMC_BASE_URL", "https://api.nimc.gov.ng"),
         nimc_vpn_required=os.getenv("NIMC_VPN_REQUIRED", "true").lower() == "true",
+        # NIMC Mock configuration
+        nimc_mock_username=os.getenv("NIMC_MOCK_USERNAME", "demo_user"),
+        nimc_mock_password=os.getenv("NIMC_MOCK_PASSWORD", "demo_pass"),
+        nimc_mock_orgid=os.getenv("NIMC_MOCK_ORGID", "demo_org"),
+        nimc_mock_token_expiry_minutes=_parse_positive_int(os.getenv("NIMC_MOCK_TOKEN_EXPIRY_MINUTES"), default=30, field_name="NIMC_MOCK_TOKEN_EXPIRY_MINUTES"),
     )

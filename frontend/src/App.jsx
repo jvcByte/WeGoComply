@@ -14,6 +14,7 @@ import { useAuth } from './auth/AuthProvider'
 import ProtectedRoute from './auth/ProtectedRoute'
 import { ALL_ROLES, USER_ROLES, formatRole } from './auth/roles'
 import Dashboard from './pages/Dashboard'
+import ComplianceDashboard from './pages/ComplianceDashboard'
 import KYC from './pages/KYC'
 import AML from './pages/AML'
 import TaxVerification from './pages/TaxVerification'
@@ -21,6 +22,12 @@ import Regulatory from './pages/Regulatory'
 
 const nav = [
   { to: '/', label: 'Dashboard', icon: Activity, roles: ALL_ROLES },
+  {
+    to: '/compliance',
+    label: 'Compliance Score',
+    icon: Shield,
+    roles: [USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST, USER_ROLES.VIEWER],
+  },
   {
     to: '/kyc',
     label: 'KYC',
@@ -165,6 +172,16 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={ALL_ROLES}>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/compliance"
+            element={
+              <ProtectedRoute
+                allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST, USER_ROLES.VIEWER]}
+              >
+                <ComplianceDashboard />
               </ProtectedRoute>
             }
           />
