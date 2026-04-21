@@ -18,6 +18,7 @@ import Dashboard from './pages/Dashboard'
 import ComplianceDashboard from './pages/ComplianceDashboard'
 import KYC from './pages/KYC'
 import AML from './pages/AML'
+import FraudDetection from './pages/FraudDetection'
 import TaxVerification from './pages/TaxVerification'
 import Regulatory from './pages/Regulatory'
 import CompliancePosture from './pages/CompliancePosture'
@@ -40,6 +41,12 @@ const nav = [
     to: '/aml',
     label: 'AML Monitor',
     icon: Bell,
+    roles: [USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST],
+  },
+  {
+    to: '/fraud',
+    label: 'Fraud Detection',
+    icon: TrendingUp,
     roles: [USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST],
   },
   {
@@ -205,6 +212,16 @@ export default function App() {
                 allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST]}
               >
                 <AML />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/fraud"
+            element={
+              <ProtectedRoute
+                allowedRoles={[USER_ROLES.ADMIN, USER_ROLES.COMPLIANCE_OFFICER, USER_ROLES.ANALYST]}
+              >
+                <FraudDetection />
               </ProtectedRoute>
             }
           />

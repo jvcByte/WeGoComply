@@ -60,6 +60,7 @@ class Settings:
     azure_document_intelligence_endpoint: str | None
     azure_document_intelligence_key: str | None
     aml_model_path: Path
+    fraud_model_path: Path | None
     verifyme_secret_key: str | None
     verifyme_base_url: str
     # Identity provider configuration
@@ -227,6 +228,22 @@ def _resolve_audit_log_path(raw_log_path: str | None) -> Path:
     return (BASE_DIR / log_path).resolve()
 
 
+def _resolve_fraud_model_path(raw_model_path: str | None) -> Path | None:
+    if not raw_model_path:
+        candidates = [
+            (BASE_DIR / "artifacts" / "fraud_dashboard_model.joblib").resolve(),
+            (BASE_DIR.parent / "artifacts" / "fraud_dashboard_model.joblib").resolve(),
+        ]
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+        return None
+    model_path = Path(raw_model_path)
+    if model_path.is_absolute():
+        return model_path
+    return (BASE_DIR / model_path).resolve()
+
+
 @lru_cache
 def get_settings() -> Settings:
     secret_resolver = SecretResolver(os.getenv("AZURE_KEY_VAULT_URL"))
@@ -279,6 +296,7 @@ def get_settings() -> Settings:
         azure_document_intelligence_endpoint=os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT"),
         azure_document_intelligence_key=secret_resolver.resolve("AZURE_DOCUMENT_INTELLIGENCE_KEY"),
         aml_model_path=_resolve_model_path(os.getenv("AML_MODEL_PATH")),
+        fraud_model_path=_resolve_fraud_model_path(os.getenv("FRAUD_MODEL_PATH")),
         # Identity provider configuration
         identity_mode=os.getenv("IDENTITY_MODE", "mock"),
         identity_provider=os.getenv("IDENTITY_PROVIDER", "mock"),

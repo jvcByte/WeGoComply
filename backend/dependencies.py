@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from core.config import Settings, get_settings
+from core.config import get_settings
 from core.rate_limit import InMemoryRateLimiter, RedisRateLimiter
 from repositories.aml_repository import AMLModelRepository
 from repositories.audit_repository import AppendOnlyAuditRepository
+from repositories.fraud_repository import FraudModelRepository
 from repositories.regulatory_repository import RegulatoryCircularRepository
 from services.aml_service import AMLService
 from services.audit_service import AuditService
 from services.compliance_service import ComplianceService
+from services.fraud_service import FraudService
 from services.kyc_service import KYCService
 from services.regulatory_service import RegulatoryService
 from services.tax_service import TaxService
@@ -79,3 +81,15 @@ def get_compliance_service() -> ComplianceService:
 @lru_cache
 def get_verifyme_service() -> VerifyMeService:
     return VerifyMeService(get_settings())
+
+
+@lru_cache
+def get_fraud_model_repository() -> FraudModelRepository:
+    settings = get_settings()
+    model_path = str(settings.fraud_model_path) if settings.fraud_model_path else None
+    return FraudModelRepository(model_path)
+
+
+@lru_cache
+def get_fraud_service() -> FraudService:
+    return FraudService(get_settings(), get_fraud_model_repository())
